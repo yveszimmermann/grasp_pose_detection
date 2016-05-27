@@ -1,0 +1,8 @@
+std_msgs/String[] models_to_detect
+
+---
+
+std_msgs/String[] models_detected
+
+std_msgs/Int32[] number_of_grasp_poses
+
