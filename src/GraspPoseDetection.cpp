@@ -52,6 +52,10 @@ GraspPoseDetection::GraspPoseDetection(std::vector<std::string>& models_to_detec
   for (int i = 0; i < models_to_detect.size(); i++){
     models_detected.push_back(models_to_detect[i]);
     number_of_grasp_poses.push_back(i);
+
+ // Load Models
+
+
   }
 
 }

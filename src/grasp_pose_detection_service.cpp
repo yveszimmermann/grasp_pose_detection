@@ -7,11 +7,6 @@
 
 #include <ros/ros.h>
 #include <vector>
-#include <pcl/PCLPointCloud2.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <pcl_conversions/pcl_conversions.h>
-#include <pcl/conversions.h>
-
 #include "grasp_pose_detection/GraspPoseDetection.hpp"
 #include "grasp_pose_detection/DetectGraspPose.h"
 #include "grasp_pose_detection/grasp_pose_detection_service.hpp"
