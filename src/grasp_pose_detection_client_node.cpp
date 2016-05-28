@@ -37,7 +37,7 @@ int main(int argc, char **argv)
 
  if (client.call(srv))
   {
-   ROS_INFO("Object detection executed.");
+   ROS_INFO("Grasp pose detection executed.");
    for (int i = 0; i < srv.response.models_detected .size(); i++){
     std::cout << "Model " << srv.response.models_detected[i] << " was detected in the scene." << std::endl;
    }

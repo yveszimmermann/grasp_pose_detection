@@ -27,27 +27,26 @@ class GraspPoseDetection
 
   struct object_data
   {
-    pcl::PointCloud<PointType> point_cloud;
-    pcl::PointCloud<pcl::Normal> normals;
+    pcl::PointCloud<PointType>::Ptr point_cloud_ptr;
+    pcl::PointCloud<pcl::Normal>::Ptr normals;
   };
 
   struct grasp_pose
   {
     geometry_msgs::Pose grasp_pose;
-    std::vector finger_position;
+    std::vector<double> finger_position;
   };
 
   struct finger_data{
-    std::vector finger_initial_position;
+    Eigen::Vector3f finger_initial_position;
     Eigen::Vector3f finger_plate_normal;
     float trajectory_angle; //angle between normal and trajectory, used for rotation of model around the x-axis
     float finger_height;
     float finger_width;
   };
 
-  struct gripper_mask{
-    std::vector<finger_data> finger_data;
-  };
+    std::vector<finger_data> gripper_mask;
+
 
  public:
 
@@ -69,12 +68,43 @@ class GraspPoseDetection
    */
   bool detectGraspPose();
 
+  /*!
+   * detect objects in scene
+   */
+  bool loadModelData();
+
+  /*!
+    * detect objects in scene
+    */
+  bool DownSample();
+
+  /*!
+   * detect objects in scene
+   */
+  bool computeNormals();
+
+  /*!
+   * detect objects in scene
+   */
+  bool setModelPath(std::string model_path);
+
+
+
+
  private:
 
   std::vector<object_data> models_;
   std::vector<grasp_pose> grasp_pose_;
+  std::vector<finger_data> finger_data_;
+  std::vector<Eigen::Vector3f> current_grasp_direction_;
+  std::string model_path_;
+  std::vector<std::string> models_to_detect_;
 
 
+  // Parameters
+  double normal_search_radius_;
+  double normal_angle_threshold_;
+  double leaf_size_;
 
 };
 

@@ -39,6 +39,9 @@ class GraspPoseDetectionSrv
 
  private:
   ros::NodeHandle nodeHandle_;
+  double leaf_size_;
+  std::string model_folder_;
+  std::string model_path_;
 
  bool callGraspPoseDetection(DetectGraspPose::Request &models_to_detect, DetectGraspPose::Response &detected_model_poses);
 };

@@ -1,0 +1,9 @@
+<!-- Run grasp pose detection using parameterfile -->
+<launch>
+
+  <!-- Run -->
+  <node pkg="grasp_pose_detection" type="grasp_pose_detection_service" name="grasp_pose_detection_service" output="screen"> 
+    <rosparam command="load" file="$(find grasp_pose_detection)/config/GraspPoseDetectionParams.yaml"/>
+  </node>
+ 
+</launch>
