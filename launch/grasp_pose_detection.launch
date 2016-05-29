@@ -4,6 +4,7 @@
   <!-- Run -->
   <node pkg="grasp_pose_detection" type="grasp_pose_detection_service" name="grasp_pose_detection_service" output="screen"> 
     <rosparam command="load" file="$(find grasp_pose_detection)/config/GraspPoseDetectionParams.yaml"/>
+    <rosparam command="load" file="$(find grasp_pose_detection)/config/GripperMask_1.yaml"/>
   </node>
  
 </launch>

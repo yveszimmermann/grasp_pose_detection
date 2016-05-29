@@ -19,14 +19,32 @@ namespace grasp_pose_detection_srv {
 GraspPoseDetectionSrv::GraspPoseDetectionSrv(ros::NodeHandle nodeHandle)
     : nodeHandle_(nodeHandle)
 {
+  // Read Parameters
+  XmlRpc::XmlRpcValue gripper_mask;
+  nodeHandle_.getParam("/grasp_pose_detection_service/leaf_size", leaf_size_);
+  nodeHandle_.getParam("/grasp_pose_detection_service/model_folder", model_folder_);
+  nodeHandle_.getParam("/grasp_pose_detection_service/gripper_mask_1", gripper_mask);
 
-  nodeHandle.getParam("/grasp_pose_detection_service/leaf_size", leaf_size_);
-  nodeHandle.getParam("/grasp_pose_detection_service/model_folder", model_folder_);
-
+  // Set model path
   std::string path = ros::package::getPath("grasp_pose_detection");
   model_path_ = path + model_folder_;
 
-  std::cout << "Hi" << std::endl;
+  // encode gripper mask
+    for (int i = 0; i < gripper_mask.size(); ++i) {
+      GraspPoseDetection::finger_data finger;
+      finger.id = static_cast<std::string>(gripper_mask[i]["id"]);
+      finger.initial_position.x() = static_cast<double>(gripper_mask[i]["initial_position"]["x"]);
+      finger.initial_position.y() = static_cast<double>(gripper_mask[i]["initial_position"]["y"]);
+      finger.initial_position.z() = static_cast<double>(gripper_mask[i]["initial_position"]["z"]);
+      finger.plate_normal.x() = static_cast<double>(gripper_mask[i]["plate_normal"]["x"]);
+      finger.plate_normal.y() = static_cast<double>(gripper_mask[i]["plate_normal"]["y"]);
+      finger.plate_normal.z() = static_cast<double>(gripper_mask[i]["plate_normal"]["z"]);
+      finger.trajectory_angle = static_cast<double>(gripper_mask[i]["trajectory_angle"]);
+      finger.plate_height = static_cast<double>(gripper_mask[i]["plate_height"]);
+      finger.plate_width = static_cast<double>(gripper_mask[i]["plate_width"]);
+      gripper_mask_.push_back(finger);
+    }
+
   ros::ServiceServer service = nodeHandle_.advertiseService("/grasp_pose_detection", &GraspPoseDetectionSrv::callGraspPoseDetection, this);
   ROS_INFO("Ready to refine pose.");
   ros::spin();
@@ -39,7 +57,7 @@ GraspPoseDetectionSrv::~GraspPoseDetectionSrv()
 bool GraspPoseDetectionSrv::callGraspPoseDetection(DetectGraspPose::Request &req,
                                                    DetectGraspPose::Response &resp)
 {
-  std::cout << "service called!" << std::endl;
+  ROS_INFO("Service called.");
   std::vector<std::string> models_to_detect_vec;
   std::vector<std::string> models_detected_vec;
   std::vector<int> number_of_grasp_poses_vec;
@@ -50,7 +68,7 @@ bool GraspPoseDetectionSrv::callGraspPoseDetection(DetectGraspPose::Request &req
 
   GraspPoseDetection GraspPoseDetection(models_to_detect_vec, models_detected_vec, number_of_grasp_poses_vec);
   GraspPoseDetection.setModelPath(model_path_);
-  std::cout << "model_path set."  << std::endl;
+  GraspPoseDetection.setGripperMask(gripper_mask_);
   GraspPoseDetection.detectGraspPose();
 
   for (int i = 0; i < models_detected_vec.size(); i++) {

@@ -1,0 +1,37 @@
+gripper_mask_1:
+- id:                   finger_1
+  initial_position:
+    x:                  0.45
+    y:                  0.3
+    z:                  0.74
+  plate_normal:
+    x:                  0.45
+    y:                  0.3
+    z:                  0.74
+  trajectory_angle:     0
+  plate_height:         0.02
+  plate_width:          0.02
+- id:                   finger_2
+  initial_position:
+    x:                  0.45
+    y:                  0.3
+    z:                  0.74
+  plate_normal:
+    x:                  0.45
+    y:                  0.3
+    z:                  0.74
+  trajectory_angle:     0
+  plate_height:         0.02
+  plate_width:          0.02
+- id:                   finger_3
+  initial_position:
+    x:                  0.45
+    y:                  0.3
+    z:                  0.74
+  plate_normal:
+    x:                  0.45
+    y:                  0.3
+    z:                  0.74
+  trajectory_angle:     0
+  plate_height:         0.02
+  plate_width:          0.02

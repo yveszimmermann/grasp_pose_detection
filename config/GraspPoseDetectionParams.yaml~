@@ -1,5 +1,2 @@
-leaf_size: 0.002
-model_folder: "Models/"
-
-
-
+leaf_size: 	0.002
+model_folder: 	"/models/"
