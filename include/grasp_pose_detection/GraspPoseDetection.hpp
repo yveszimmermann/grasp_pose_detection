@@ -92,6 +92,11 @@ class GraspPoseDetection
   /*!
    * detect objects in scene
    */
+  bool checkGraspPose(int model_index, int direction_index, int orientation_index);
+
+  /*!
+   * detect objects in scene
+   */
   bool setModelPath(std::string model_path);
 
   /*!
@@ -107,6 +112,9 @@ class GraspPoseDetection
   std::vector<object_data> models_;
 
   std::vector<Eigen::Vector3d> grasp_directions_;
+  std::vector<double> theta_;
+  std::vector<double> phi_;
+
   std::vector<grasp_pose> grasp_poses_;
 
 

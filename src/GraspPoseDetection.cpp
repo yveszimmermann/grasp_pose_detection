@@ -7,27 +7,20 @@
 
 #include <boost/thread/thread.hpp>
 #include <math.h>
+#include <string>
+
+#include <ros/package.h>
+#include <sensor_msgs/PointCloud2.h>
+
 #include <pcl/PCLPointCloud2.h>
 #include <pcl/common/transforms.h>
 #include <pcl/conversions.h>
-#include <pcl/features/board.h>
-#include <pcl/features/fpfh.h>
 #include <pcl/features/normal_3d.h>
 #include <pcl/features/normal_3d_omp.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/io/pcd_io.h>
-#include <pcl/io/ply_io.h>
-#include <pcl/keypoints/iss_3d.h>
-#include <pcl/recognition/cg/geometric_consistency.h>
-#include <pcl/recognition/cg/hough_3d.h>
-#include <pcl/recognition/cg/hough_3d.h>
-#include <pcl/registration/icp.h>
-#include <pcl/visualization/pcl_visualizer.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/transforms.h>
-#include <ros/package.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <string>
 
 #include "grasp_pose_detection/GraspPoseDetection.hpp"
 
@@ -53,7 +46,7 @@ GraspPoseDetection::GraspPoseDetection(std::vector<std::string>& models_to_detec
     : normal_search_radius_(0.01),
       normal_angle_threshold_(0.35),
       leaf_size_(0.002),
-      number_of_equator_points_(50)
+      number_of_equator_points_(100)
 {
   models_to_detect_ = models_to_detect;
   models_.resize(models_to_detect.size());
@@ -79,6 +72,23 @@ bool GraspPoseDetection::detectGraspPose()
 
   computeGraspDirections();
   ROS_INFO_STREAM("Computed " << grasp_directions_.size() << " grasp directions.");
+
+  // detect the grasp poses by iterating through the grasp directions
+  for (int model_index = 0; model_index < models_.size(); model_index++) {
+    for (int direction_index = 0; direction_index < grasp_directions_.size(); direction_index++) {
+      // TODO do iteration of height
+      for (int orientation_index = 0; orientation_index < number_of_equator_points_;
+          orientation_index++) {
+
+        checkGraspPose(model_index, direction_index, orientation_index);
+
+      }
+
+      //TODO keep only the "best orientations of one direction
+      //push the best selection of grasp poses to models_detected and number_of_grasp_poses
+
+    }
+  }
   return true;
 }
 
@@ -134,9 +144,6 @@ bool GraspPoseDetection::DownSample()
   return true;
 }
 
-/*!
- * detect objects in scene
- */
 bool GraspPoseDetection::computeGraspDirections()
 {
   double theta_equator = 2 * M_PI / number_of_equator_points_;
@@ -151,11 +158,12 @@ bool GraspPoseDetection::computeGraspDirections()
     grasp_direction.x() = cos(theta_equator * i);
     grasp_direction.y() = sin(theta_equator * i);
     grasp_direction.z() = 0;
+    theta_.push_back(theta_equator * i);
+    phi_.push_back(0.0);
     grasp_directions_.push_back(grasp_direction);
   }
 
   while (phi_latitude <= M_PI / 2) {
-
     //calculate ammount of points and  angle
     n_latitude = ceil(number_of_equator_points_ * cos(phi_latitude));
     theta_latitude = 2 * M_PI / n_latitude;
@@ -163,15 +171,55 @@ bool GraspPoseDetection::computeGraspDirections()
     //save grasp_directions
     for (int i = 0; i < n_latitude; i++) {
       Eigen::Vector3d grasp_direction;
+
+      // positive hemisphere
       grasp_direction.x() = cos(phi_latitude) * cos(theta_latitude * i);
       grasp_direction.y() = cos(phi_latitude) * sin(theta_latitude * i);
       grasp_direction.z() = sin(phi_latitude);
+
+      theta_.push_back(theta_latitude * i);
+      phi_.push_back(phi_latitude);
+      grasp_directions_.push_back(grasp_direction);
+
+      // negative hemisphere
+      grasp_direction.x() = cos(phi_latitude) * cos(theta_latitude * i);
+      grasp_direction.y() = cos(phi_latitude) * sin(theta_latitude * i);
+      grasp_direction.z() = -sin(phi_latitude);
+
+      theta_.push_back(theta_latitude * i);
+      phi_.push_back(-phi_latitude);
       grasp_directions_.push_back(grasp_direction);
     }
 
     // set phi of next latitude
     phi_latitude = phi_latitude + theta_equator;
   }
+  return true;
+}
+
+bool GraspPoseDetection::checkGraspPose(int model_index, int direction_index, int orientation_index)
+{
+  // Get model cloud description in grasp pose frame
+  float theta = (float) theta_[direction_index];
+  float psi = (float) -( M_PI / 2 - phi_[direction_index]);
+  float delta = 2 * M_PI / number_of_equator_points_ * orientation_index;
+
+  Eigen::Matrix4f ori_rot;
+  ori_rot << cos(-delta), -sin(-delta), 0, 0, sin(-delta), cos(-delta), 0, 0, 0, 0, 1, 0, 0, 0, 0, 1;
+
+  Eigen::Matrix4f y_rot;
+  y_rot << cos(psi), 0, sin(psi), 0, 0, 1, 0, 0, -sin(psi), 0, cos(psi), 0, 0, 0, 0, 1;
+
+  Eigen::Matrix4f z_rot;
+  z_rot << cos(-theta), -sin(-theta), 0, 0, sin(-theta), cos(-theta), 0, 0, 0, 0, 1, 0, 0, 0, 0, 1;
+
+  Eigen::Matrix4f rot = ori_rot * y_rot * z_rot;
+
+  pcl::PointCloud<PointType>::Ptr model_alligned (new pcl::PointCloud<PointType>);
+
+  pcl::transformPointCloud(*models_[model_index].point_cloud_ptr, *model_alligned, rot);
+
+
   return true;
 }
 
