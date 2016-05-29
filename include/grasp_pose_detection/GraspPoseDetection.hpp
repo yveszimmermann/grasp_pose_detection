@@ -87,6 +87,11 @@ class GraspPoseDetection
   /*!
    * detect objects in scene
    */
+  bool computeGraspDirections();
+
+  /*!
+   * detect objects in scene
+   */
   bool setModelPath(std::string model_path);
 
   /*!
@@ -96,18 +101,20 @@ class GraspPoseDetection
 
  private:
 
-  std::vector<finger_data> gripper_mask_;
-  std::vector<object_data> models_;
-  std::vector<grasp_pose> grasp_pose_;
-  std::vector<finger_data> finger_data_;
-  std::vector<Eigen::Vector3f> current_grasp_direction_;
   std::string model_path_;
   std::vector<std::string> models_to_detect_;
+  std::vector<finger_data> gripper_mask_;
+  std::vector<object_data> models_;
+
+  std::vector<Eigen::Vector3d> grasp_directions_;
+  std::vector<grasp_pose> grasp_poses_;
+
 
   // Parameters
   double normal_search_radius_;
   double normal_angle_threshold_;
   double leaf_size_;
+  double number_of_equator_points_; //ammount of points on the meridian of the geodesic grid
 
 };
 
