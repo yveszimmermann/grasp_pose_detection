@@ -22,6 +22,7 @@ GraspPoseDetectionSrv::GraspPoseDetectionSrv(ros::NodeHandle nodeHandle)
   // Read Parameters
   XmlRpc::XmlRpcValue gripper_mask;
   nodeHandle_.getParam("/grasp_pose_detection_service/leaf_size", leaf_size_);
+  nodeHandle_.getParam("/grasp_pose_detection_service/number_of_equator_points", number_of_equator_points_);
   nodeHandle_.getParam("/grasp_pose_detection_service/model_folder", model_folder_);
   nodeHandle_.getParam("/grasp_pose_detection_service/gripper_mask_1", gripper_mask);
 
@@ -46,7 +47,7 @@ GraspPoseDetectionSrv::GraspPoseDetectionSrv(ros::NodeHandle nodeHandle)
     }
 
   ros::ServiceServer service = nodeHandle_.advertiseService("/grasp_pose_detection", &GraspPoseDetectionSrv::callGraspPoseDetection, this);
-  ROS_INFO("Ready to refine pose.");
+  ROS_INFO("Ready to detect grasp poses.");
   ros::spin();
 }
 
@@ -69,6 +70,8 @@ bool GraspPoseDetectionSrv::callGraspPoseDetection(DetectGraspPose::Request &req
   GraspPoseDetection GraspPoseDetection(models_to_detect_vec, models_detected_vec, number_of_grasp_poses_vec);
   GraspPoseDetection.setModelPath(model_path_);
   GraspPoseDetection.setGripperMask(gripper_mask_);
+  GraspPoseDetection.setNumberOfEquatorPoints(number_of_equator_points_);
+  GraspPoseDetection.setLeafSize(leaf_size_);
   GraspPoseDetection.detectGraspPose();
 
   for (int i = 0; i < models_detected_vec.size(); i++) {

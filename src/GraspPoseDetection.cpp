@@ -46,7 +46,7 @@ GraspPoseDetection::GraspPoseDetection(std::vector<std::string>& models_to_detec
     : normal_search_radius_(0.01),
       normal_angle_threshold_(0.35),
       leaf_size_(0.002),
-      number_of_equator_points_(50)
+      number_of_equator_points_(100)
 {
   models_to_detect_ = models_to_detect;
   models_.resize(models_to_detect.size());
@@ -319,6 +319,16 @@ bool GraspPoseDetection::setModelPath(std::string model_path)
 bool GraspPoseDetection::setGripperMask(std::vector<finger_data> gripper_mask)
 {
   gripper_mask_ = gripper_mask;
+  return true;
+}
+
+bool GraspPoseDetection::setLeafSize(double leaf_size){
+  leaf_size_ = leaf_size;
+  return true;
+}
+
+bool GraspPoseDetection::setNumberOfEquatorPoints(double number_of_equator_points){
+  number_of_equator_points_ = number_of_equator_points;
   return true;
 }
 

@@ -105,6 +105,16 @@ class GraspPoseDetection
    */
   bool setGripperMask(std::vector<finger_data> gripper_mask);
 
+  /*!
+   * detect objects in scene
+   */
+  bool setLeafSize(double leaf_size);
+
+  /*!
+   * detect objects in scene
+   */
+  bool setNumberOfEquatorPoints(double number_of_equator_points);
+
  private:
 
   std::string model_path_;
