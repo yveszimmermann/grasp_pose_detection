@@ -31,12 +31,13 @@ class GraspPoseDetection
   {
     pcl::PointCloud<PointType>::Ptr point_cloud_ptr;
     pcl::PointCloud<pcl::Normal>::Ptr normals;
+    pcl::PointCloud<PointType>::Ptr normals_cloud;
   };
 
   struct grasp_pose
   {
     geometry_msgs::Pose grasp_pose;
-    std::vector<double> finger_position;
+    std::vector<double> finger_position; // y position of fingerplate
   };
 
   struct finger_data
@@ -123,6 +124,7 @@ class GraspPoseDetection
   double normal_angle_threshold_;
   double leaf_size_;
   double number_of_equator_points_; //ammount of points on the meridian of the geodesic grid
+                                    //computation time scales with n³.
 
 };
 
