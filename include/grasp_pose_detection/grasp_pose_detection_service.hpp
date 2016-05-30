@@ -40,12 +40,14 @@ class GraspPoseDetectionSrv
  private:
   ros::NodeHandle nodeHandle_;
   double leaf_size_;
-  double number_of_equator_points_;
+  int number_of_equator_points_;
   double min_grasp_pose_quality_;
   double normal_search_radius_;
 
   std::string model_folder_;
+  std::string save_folder_;
   std::string model_path_;
+  std::string save_path_;
   std::vector<GraspPoseDetection::finger_data> gripper_mask_;
 
 

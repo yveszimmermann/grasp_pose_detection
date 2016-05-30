@@ -24,6 +24,7 @@ GraspPoseDetectionSrv::GraspPoseDetectionSrv(ros::NodeHandle nodeHandle)
   nodeHandle_.getParam("/grasp_pose_detection_service/leaf_size", leaf_size_);
   nodeHandle_.getParam("/grasp_pose_detection_service/number_of_equator_points", number_of_equator_points_);
   nodeHandle_.getParam("/grasp_pose_detection_service/model_folder", model_folder_);
+  nodeHandle_.getParam("/grasp_pose_detection_service/save_folder", save_folder_);
   nodeHandle_.getParam("/grasp_pose_detection_service/gripper_mask_1", gripper_mask);
   nodeHandle_.getParam("/grasp_pose_detection_service/min_grasp_pose_quality", min_grasp_pose_quality_);
   nodeHandle_.getParam("/grasp_pose_detection_service/normal_search_radius", normal_search_radius_);
@@ -71,17 +72,18 @@ bool GraspPoseDetectionSrv::callGraspPoseDetection(DetectGraspPose::Request &req
     models_to_detect_vec.push_back(req.models_to_detect[i].data);
   }
 
-  GraspPoseDetection GraspPoseDetection(models_to_detect_vec, models_detected_vec, number_of_grasp_poses_vec);
+  GraspPoseDetection GraspPoseDetection(models_to_detect_vec);
   GraspPoseDetection.setModelPath(model_path_);
+  GraspPoseDetection.setSavePath(save_path_);
   GraspPoseDetection.setGripperMask(gripper_mask_);
   GraspPoseDetection.setNumberOfEquatorPoints(number_of_equator_points_);
   GraspPoseDetection.setLeafSize(leaf_size_);
   GraspPoseDetection.setMinGraspPoseQuality(min_grasp_pose_quality_);
   GraspPoseDetection.setNormalSearchRadius(normal_search_radius_);
-  GraspPoseDetection.detectGraspPose();
+  GraspPoseDetection.detectGraspPose(models_detected_vec, number_of_grasp_poses_vec);
 
   for (int i = 0; i < models_detected_vec.size(); i++) {
-    std::cout << models_detected_vec[i] << " as " << number_of_grasp_poses_vec[i] << std::endl;
+    std::cout << models_detected_vec[i] << " has " << number_of_grasp_poses_vec[i] << " grasp poses."<< std::endl;
   }
 
  // write results to response

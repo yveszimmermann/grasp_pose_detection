@@ -41,13 +41,13 @@ void toc()
 
 namespace grasp_pose_detection {
 
-GraspPoseDetection::GraspPoseDetection(std::vector<std::string>& models_to_detect,
-                                       std::vector<std::string>& models_detected,
-                                       std::vector<int>& number_of_grasp_poses)
+GraspPoseDetection::GraspPoseDetection(std::vector<std::string>& models_to_detect)
     : normal_search_radius_(0.01),
       leaf_size_(0.002),
       number_of_equator_points_(100),
-      min_grasp_pose_quality_(0.5)
+      min_grasp_pose_quality_(0.5),
+      number_of_normal_grasp_poses_(0),
+      number_of_pinch_grasp_poses_(0)
 {
   models_to_detect_ = models_to_detect;
   models_.resize(models_to_detect.size());
@@ -57,7 +57,8 @@ GraspPoseDetection::~GraspPoseDetection()
 {
 }
 
-bool GraspPoseDetection::detectGraspPose()
+bool GraspPoseDetection::detectGraspPose(std::vector<std::string>& models_detected,
+                                         std::vector<int>& number_of_grasp_poses)
 {
   tic();
   // Load and Prepare Models
@@ -73,6 +74,7 @@ bool GraspPoseDetection::detectGraspPose()
 
   computeGraspDirections();
   ROS_INFO_STREAM("Computed " << grasp_directions_.size() << " grasp directions.");
+  ROS_INFO_STREAM("Trying " << number_of_equator_points_ * grasp_directions_.size() << " grasp poses");
 
   // detect the grasp poses by iterating through the grasp directions
   for (int model_index = 0; model_index < models_.size(); model_index++) {
@@ -82,11 +84,25 @@ bool GraspPoseDetection::detectGraspPose()
           orientation_index++) {
         checkGraspPose(model_index, direction_index, orientation_index);
       }
-      //TODO keep only the "best orientations of one direction
-      //push the best selection of grasp poses to models_detected and number_of_grasp_poses
+
     }
+    if (number_of_normal_grasp_poses_ + number_of_pinch_grasp_poses_ > 0){
+    number_of_grasp_poses.push_back(number_of_normal_grasp_poses_ + number_of_pinch_grasp_poses_);
+    models_detected.push_back(models_to_detect_[model_index]);
+    }
+
+    ROS_INFO_STREAM( "Model: " << models_to_detect_[model_index]);
+    ROS_INFO_STREAM( "Detected " << number_of_normal_grasp_poses_ << " normal grasp_poses.");
+    ROS_INFO_STREAM( "Detected " << number_of_pinch_grasp_poses_ << " pinched grasp_poses.");
+    // TODO write grasp poses to file here!
+    number_of_normal_grasp_poses_ = 0;
+    number_of_pinch_grasp_poses_ = 0;
   }
 
+  // stop timer
+  toc();
+
+  //TODO Quaternion output, to remove
   Eigen::Matrix3f rotation;
   rotation << 1, 0, 0, 0, 1, 0, 0, 0, 1;
 
@@ -109,8 +125,6 @@ bool GraspPoseDetection::detectGraspPose()
         << grasp_poses_[i].grasp_pose.orientation.w << " " << std::endl;
 
   }
-  std::cout << "Detected " << grasp_poses_.size() << " grasp_poses." << std::endl;
-  toc();
   return true;
 }
 
@@ -389,7 +403,7 @@ bool GraspPoseDetection::validateGraspPose(std::vector<int> contact_index,
       new_grasp_pose.finger_position.push_back(model_aligned->points[contact_index[i]].y);
     }
     grasp_poses_.push_back(new_grasp_pose);
-    std::cout << "There is a normal grasp position!!!" << std::endl;
+    number_of_normal_grasp_poses_++;
     return true;
   } else if (pinch_groups_.size() > 0) {
     //std::cout << "trying pinch" << std::endl;
@@ -428,12 +442,12 @@ bool GraspPoseDetection::validateGraspPose(std::vector<int> contact_index,
     }
     // selection using the quality values
     if (grasp_pose_ensured && grasp_pose_quality > min_grasp_pose_quality_) {
-      std::cout << "There is a pinch grasp position!!!" << std::endl;
       grasp_pose new_grasp_pose;
       new_grasp_pose.grasp_pose_quality = grasp_pose_quality;
       for (int i = 0; i < gripper_mask_.size(); i++) {
         new_grasp_pose.finger_position.push_back(model_aligned->points[contact_index[i]].y);
       }
+      number_of_pinch_grasp_poses_++;
       grasp_poses_.push_back(new_grasp_pose);
       return true;
     }
@@ -444,6 +458,12 @@ bool GraspPoseDetection::validateGraspPose(std::vector<int> contact_index,
 bool GraspPoseDetection::setModelPath(std::string model_path)
 {
   model_path_ = model_path;
+  return true;
+}
+
+bool GraspPoseDetection::setSavePath(std::string save_path)
+{
+  save_path_ = save_path;
   return true;
 }
 
@@ -477,9 +497,11 @@ bool GraspPoseDetection::setLeafSize(double leaf_size)
   return true;
 }
 
-bool GraspPoseDetection::setNumberOfEquatorPoints(double number_of_equator_points)
+bool GraspPoseDetection::setNumberOfEquatorPoints(int number_of_equator_points)
 {
   number_of_equator_points_ = number_of_equator_points;
+  if ((number_of_equator_points % 4) != 0)
+    ROS_WARN("Consider using a multiple of 4 as 'number_of_equator_points' to produce better pseudo geodesic grids.");
   return true;
 }
 

@@ -37,7 +37,7 @@ class GraspPoseDetection
   struct grasp_pose
   {
     geometry_msgs::Pose grasp_pose;
-    std::vector<double> finger_position; // y position of fingerplate
+    std::vector<double> finger_position;  // y position of fingerplate
     double grasp_pose_quality;
   };
 
@@ -59,9 +59,7 @@ class GraspPoseDetection
    * Constructor.
    * @param nodeHandle the ROS node handle.
    */
-  GraspPoseDetection(std::vector<std::string>& models_to_detect,
-                     std::vector<std::string>& models_detected,
-                     std::vector<int>& number_of_grasp_poses);
+  GraspPoseDetection(std::vector<std::string>& models_to_detect);
 
   /*!
    * Destructor.
@@ -71,7 +69,8 @@ class GraspPoseDetection
   /*!
    * detect objects in scene
    */
-  bool detectGraspPose();
+  bool detectGraspPose(std::vector<std::string>& models_detected,
+                       std::vector<int>& number_of_grasp_poses);
 
   /*!
    * detect objects in scene
@@ -101,12 +100,19 @@ class GraspPoseDetection
   /*!
    * detect objects in scene
    */
-  bool validateGraspPose(std::vector<int> contact_index, pcl::PointCloud<PointType>::Ptr model_aligned, pcl::PointCloud<PointType>::Ptr normals_aligned);
+  bool validateGraspPose(std::vector<int> contact_index,
+                         pcl::PointCloud<PointType>::Ptr model_aligned,
+                         pcl::PointCloud<PointType>::Ptr normals_aligned);
 
   /*!
    * detect objects in scene
    */
   bool setModelPath(std::string model_path);
+
+  /*!
+   * detect objects in scene
+   */
+  bool setSavePath(std::string save_path);
 
   /*!
    * detect objects in scene
@@ -121,7 +127,7 @@ class GraspPoseDetection
   /*!
    * detect objects in scene
    */
-  bool setNumberOfEquatorPoints(double number_of_equator_points);
+  bool setNumberOfEquatorPoints(int number_of_equator_points);
 
   /*!
    * detect objects in scene
@@ -136,6 +142,7 @@ class GraspPoseDetection
  private:
 
   std::string model_path_;
+  std::string save_path_;
   std::vector<std::string> models_to_detect_;
   std::vector<finger_data> gripper_mask_;
   std::vector<Eigen::Vector2i> pinch_groups_;
@@ -147,14 +154,14 @@ class GraspPoseDetection
 
   std::vector<grasp_pose> grasp_poses_;
 
-
-
   // Parameters
   double normal_search_radius_;
   double leaf_size_;
-  double number_of_equator_points_; //ammount of points on the meridian of the geodesic grid
-                                    //computation time scales with n³.
+  int number_of_equator_points_;  //ammount of points on the meridian of the geodesic grid
+                                  //computation time scales with n³.
   double min_grasp_pose_quality_;
+  int number_of_pinch_grasp_poses_;
+  int number_of_normal_grasp_poses_;
 
 };
 
