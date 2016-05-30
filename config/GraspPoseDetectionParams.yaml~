@@ -1,4 +1,5 @@
 leaf_size:                0.001
 model_folder:             "/models/"
-number_of_equator_points: 50
-min_grasp_pose_quality:   0.8
+number_of_equator_points: 16
+min_grasp_pose_quality:   0.999
+normal_search_radius:     0.0025

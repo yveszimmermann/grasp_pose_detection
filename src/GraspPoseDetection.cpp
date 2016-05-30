@@ -45,7 +45,6 @@ GraspPoseDetection::GraspPoseDetection(std::vector<std::string>& models_to_detec
                                        std::vector<std::string>& models_detected,
                                        std::vector<int>& number_of_grasp_poses)
     : normal_search_radius_(0.01),
-      normal_angle_threshold_(0.35),
       leaf_size_(0.002),
       number_of_equator_points_(100),
       min_grasp_pose_quality_(0.5)
@@ -85,8 +84,30 @@ bool GraspPoseDetection::detectGraspPose()
       }
       //TODO keep only the "best orientations of one direction
       //push the best selection of grasp poses to models_detected and number_of_grasp_poses
-
     }
+  }
+
+  Eigen::Matrix3f rotation;
+  rotation << 1, 0, 0, 0, 1, 0, 0, 0, 1;
+
+  // Convert homogenous transformation matrix to pose
+  geometry_msgs::Pose new_pose;
+
+  Eigen::Quaternionf quat(rotation);
+  new_pose.orientation.w = quat.w();
+  new_pose.orientation.x = quat.x();
+  new_pose.orientation.y = quat.y();
+  new_pose.orientation.z = quat.z();
+
+  std::cout << "Unit Quaternion: " << new_pose.orientation.x << " " << new_pose.orientation.y << " "
+            << new_pose.orientation.z << " " << new_pose.orientation.w << " " << std::endl;
+  std::cout << "Grasp pose quaternions:" << std::endl;
+  for (int i = 0; i < grasp_poses_.size(); i++) {
+    std::cout << grasp_poses_[i].grasp_pose.orientation.x << " "
+        << grasp_poses_[i].grasp_pose.orientation.y << " "
+        << grasp_poses_[i].grasp_pose.orientation.z << " "
+        << grasp_poses_[i].grasp_pose.orientation.w << " " << std::endl;
+
   }
   std::cout << "Detected " << grasp_poses_.size() << " grasp_poses." << std::endl;
   toc();
@@ -238,7 +259,7 @@ bool GraspPoseDetection::checkGraspPose(int model_index, int direction_index, in
   std::vector<int> contact_index;
   std::vector<double> contact_distance;
   contact_index.resize(gripper_mask_.size());
-  contact_distance.resize(gripper_mask_.size(), std::numeric_limits<double>::max() );
+  contact_distance.resize(gripper_mask_.size(), std::numeric_limits<double>::max());
 
   for (int i = 0; i < gripper_mask_.size(); i++) {
 
@@ -273,7 +294,6 @@ bool GraspPoseDetection::checkGraspPose(int model_index, int direction_index, in
       }
     }
 
-    //std::cout << "found " << inlier_indexes.size() << " points in finger " << i << "'s path" << std::endl;
     // pick contact point from segmented cloud
     for (int j = 0; j < inlier_indexes.size(); j++) {
       Eigen::Vector3d relative_point_position;
@@ -291,16 +311,13 @@ bool GraspPoseDetection::checkGraspPose(int model_index, int direction_index, in
         contact_index[i] = inlier_indexes[j];
       }
     }
-    std::cout <<"finger " << i << "point_collision_distance = "  << contact_distance[i] << std::endl;
   }
 
   // Validation of grasp pose
-  if(validateGraspPose(contact_index, model_aligned, normals_aligned)){
+  if (validateGraspPose(contact_index, model_aligned, normals_aligned)) {
     Eigen::Matrix4f grasp_transform = rot.inverse();
-    Eigen::Matrix3f rotation =
-        grasp_transform.block<3, 3>(0, 0);
-    Eigen::Vector3f translation =
-        grasp_transform.block<3, 1>(0, 3);
+    Eigen::Matrix3f rotation = grasp_transform.block<3, 3>(0, 0);
+    Eigen::Vector3f translation = grasp_transform.block<3, 1>(0, 3);
 
     // Convert homogenous transformation matrix to pose
     geometry_msgs::Pose new_pose;
@@ -314,7 +331,7 @@ bool GraspPoseDetection::checkGraspPose(int model_index, int direction_index, in
     new_pose.orientation.x = quat.x();
     new_pose.orientation.y = quat.y();
     new_pose.orientation.z = quat.z();
-    grasp_poses_.back().grasp_pose  = new_pose;
+    grasp_poses_.back().grasp_pose = new_pose;
   }
 
   return true;
@@ -332,6 +349,7 @@ bool GraspPoseDetection::validateGraspPose(std::vector<int> contact_index,
   contact_grip_ensured.resize(gripper_mask_.size(), false);
   contact_quality.resize(gripper_mask_.size());
 
+  // building the quality criteria
   for (int i = 0; i < gripper_mask_.size(); i++) {
     contact_normals[i].x() = normals_aligned->points[contact_index[i]].x;
     contact_normals[i].y() = normals_aligned->points[contact_index[i]].y;
@@ -339,30 +357,31 @@ bool GraspPoseDetection::validateGraspPose(std::vector<int> contact_index,
     contact_normals[i].normalize();
 
     contact_quality[i] = contact_normals[i].dot(gripper_mask_[i].plate_normal);
-    std::cout << "contact_quality" << contact_quality[i] << std::endl;
+//    std::cout << "contact_quality" << contact_quality[i] << std::endl;
 
     if (contact_quality[i] >= cos(gripper_mask_[i].max_grasp_angle)) {
       contact_grip_ensured[i] = true;
     }
   }
-  std::cout << "x_point " << model_aligned->points[contact_index[0]].x << std::endl;
-  std::cout << "y_point" << model_aligned->points[contact_index[0]].y << std::endl;
-  std::cout << "z_point " << model_aligned->points[contact_index[0]].z << std::endl;
-  std::cout << "x_norm " << contact_normals[0].x() << std::endl;
-  std::cout << "y_norm " << contact_normals[0].y() << std::endl;
-  std::cout << "z_norm " << contact_normals[0].z() << std::endl;
-  std::cout << "x_plate " << gripper_mask_[0].plate_normal.x() << std::endl;
-  std::cout << "y_plate " << gripper_mask_[0].plate_normal.y() << std::endl;
-  std::cout << "z_plate " << gripper_mask_[0].plate_normal.z() << std::endl;
+//  std::cout << "x_point " << model_aligned->points[contact_index[0]].x << std::endl;
+//  std::cout << "y_point" << model_aligned->points[contact_index[0]].y << std::endl;
+//  std::cout << "z_point " << model_aligned->points[contact_index[0]].z << std::endl;
+//  std::cout << "x_norm " << contact_normals[0].x() << std::endl;
+//  std::cout << "y_norm " << contact_normals[0].y() << std::endl;
+//  std::cout << "z_norm " << contact_normals[0].z() << std::endl;
+//  std::cout << "x_plate " << gripper_mask_[0].plate_normal.x() << std::endl;
+//  std::cout << "y_plate " << gripper_mask_[0].plate_normal.y() << std::endl;
+//  std::cout << "z_plate " << gripper_mask_[0].plate_normal.z() << std::endl;
 
   bool grasp_pose_ensured = true;
   bool grasp_pose_quality = 1;
-  ;
+
   for (int i = 0; i < gripper_mask_.size(); i++) {
     grasp_pose_ensured = grasp_pose_ensured && contact_grip_ensured[i];
     grasp_pose_quality = grasp_pose_quality * contact_quality[i];
   }
 
+  // selection using the quality values
   if (grasp_pose_ensured && grasp_pose_quality > min_grasp_pose_quality_) {
     grasp_pose new_grasp_pose;
     new_grasp_pose.grasp_pose_quality = grasp_pose_quality;
@@ -370,9 +389,55 @@ bool GraspPoseDetection::validateGraspPose(std::vector<int> contact_index,
       new_grasp_pose.finger_position.push_back(model_aligned->points[contact_index[i]].y);
     }
     grasp_poses_.push_back(new_grasp_pose);
+    std::cout << "There is a normal grasp position!!!" << std::endl;
     return true;
-  }    //else if( TODO two fingers have the same direction)
+  } else if (pinch_groups_.size() > 0) {
+    //std::cout << "trying pinch" << std::endl;
+    // checking if pinch grip is good enough for each pinch group and reset contact_quality
+    for (int i = 0; i < pinch_groups_.size(); i++) {
+      // projecting contact normals on yz-plane to get the influence of x direction out
+      Eigen::Vector3d projected_contact_normal_x = contact_normals[pinch_groups_[i].x()];
+      Eigen::Vector3d projected_contact_normal_y = contact_normals[pinch_groups_[i].y()];
+      projected_contact_normal_x.x() = 0.0;
+      projected_contact_normal_y.x() = 0.0;
+      projected_contact_normal_x.normalize();
+      projected_contact_normal_y.normalize();
 
+      double projected_contact_quality_x = projected_contact_normal_x.dot(
+          gripper_mask_[pinch_groups_[i].x()].plate_normal);
+      double projected_contact_quality_y = projected_contact_normal_y.dot(
+          gripper_mask_[pinch_groups_[i].y()].plate_normal);
+
+      if ((contact_normals[pinch_groups_[i].x()].x() > 0)
+          != (contact_normals[pinch_groups_[i].y()].x() > 0)
+          && projected_contact_quality_x >= cos(gripper_mask_[pinch_groups_[i].x()].max_grasp_angle)
+          && projected_contact_quality_y
+              >= cos(gripper_mask_[pinch_groups_[i].y()].max_grasp_angle)) {
+        contact_quality[pinch_groups_[i].x()] = projected_contact_quality_x;
+        contact_quality[pinch_groups_[i].y()] = projected_contact_quality_y;
+        contact_grip_ensured[pinch_groups_[i].x()] = true;
+        contact_grip_ensured[pinch_groups_[i].y()] = true;
+      }
+    }
+    // checking grasp_pose_quality for pinched grasp
+    grasp_pose_ensured = true;
+    grasp_pose_quality = 1;
+    for (int j = 0; j < gripper_mask_.size(); j++) {
+      grasp_pose_ensured = grasp_pose_ensured && contact_grip_ensured[j];
+      grasp_pose_quality = grasp_pose_quality * contact_quality[j];
+    }
+    // selection using the quality values
+    if (grasp_pose_ensured && grasp_pose_quality > min_grasp_pose_quality_) {
+      std::cout << "There is a pinch grasp position!!!" << std::endl;
+      grasp_pose new_grasp_pose;
+      new_grasp_pose.grasp_pose_quality = grasp_pose_quality;
+      for (int i = 0; i < gripper_mask_.size(); i++) {
+        new_grasp_pose.finger_position.push_back(model_aligned->points[contact_index[i]].y);
+      }
+      grasp_poses_.push_back(new_grasp_pose);
+      return true;
+    }
+  }
   return false;
 }
 
@@ -385,7 +450,24 @@ bool GraspPoseDetection::setModelPath(std::string model_path)
 bool GraspPoseDetection::setGripperMask(std::vector<finger_data> gripper_mask)
 {
   gripper_mask_ = gripper_mask;
-  //TODO normalise vectors
+  int number_of_pinch_groups;
+
+  for (int i = 0; i < gripper_mask_.size(); i++) {
+    gripper_mask_[i].plate_normal.normalize();
+    if (gripper_mask_[i].pinch_group >= 0) {
+      number_of_pinch_groups = gripper_mask_[i].pinch_group + 1;
+    }
+  }
+  pinch_groups_.resize(number_of_pinch_groups);
+  for (int i = 0; i < gripper_mask_.size(); i++) {
+    if (gripper_mask_[i].pinch_group >= 0) {
+      if (pinch_groups_[gripper_mask_[i].pinch_group].x() > gripper_mask_.size()) {
+        pinch_groups_[gripper_mask_[i].pinch_group].x() = i;
+      } else {
+        pinch_groups_[gripper_mask_[i].pinch_group].y() = i;
+      }
+    }
+  }
   return true;
 }
 
@@ -404,6 +486,12 @@ bool GraspPoseDetection::setNumberOfEquatorPoints(double number_of_equator_point
 bool GraspPoseDetection::setMinGraspPoseQuality(double min_grasp_pose_quality)
 {
   min_grasp_pose_quality_ = min_grasp_pose_quality;
+  return true;
+}
+
+bool GraspPoseDetection::setNormalSearchRadius(double normal_search_radius)
+{
+  normal_search_radius_ = normal_search_radius;
   return true;
 }
 

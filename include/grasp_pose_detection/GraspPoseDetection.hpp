@@ -50,6 +50,7 @@ class GraspPoseDetection
     double plate_height;
     double plate_width;
     double max_grasp_angle;
+    int pinch_group;
   };
 
  public:
@@ -127,11 +128,17 @@ class GraspPoseDetection
    */
   bool setMinGraspPoseQuality(double min_grasp_pose_quality);
 
+  /*!
+   * detect objects in scene
+   */
+  bool setNormalSearchRadius(double normal_search_radius);
+
  private:
 
   std::string model_path_;
   std::vector<std::string> models_to_detect_;
   std::vector<finger_data> gripper_mask_;
+  std::vector<Eigen::Vector2i> pinch_groups_;
   std::vector<object_data> models_;
 
   std::vector<Eigen::Vector3d> grasp_directions_;
@@ -141,9 +148,9 @@ class GraspPoseDetection
   std::vector<grasp_pose> grasp_poses_;
 
 
+
   // Parameters
   double normal_search_radius_;
-  double normal_angle_threshold_;
   double leaf_size_;
   double number_of_equator_points_; //ammount of points on the meridian of the geodesic grid
                                     //computation time scales with n³.

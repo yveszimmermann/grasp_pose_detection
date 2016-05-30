@@ -26,6 +26,7 @@ GraspPoseDetectionSrv::GraspPoseDetectionSrv(ros::NodeHandle nodeHandle)
   nodeHandle_.getParam("/grasp_pose_detection_service/model_folder", model_folder_);
   nodeHandle_.getParam("/grasp_pose_detection_service/gripper_mask_1", gripper_mask);
   nodeHandle_.getParam("/grasp_pose_detection_service/min_grasp_pose_quality", min_grasp_pose_quality_);
+  nodeHandle_.getParam("/grasp_pose_detection_service/normal_search_radius", normal_search_radius_);
 
   // Set model path
   std::string path = ros::package::getPath("grasp_pose_detection");
@@ -45,6 +46,7 @@ GraspPoseDetectionSrv::GraspPoseDetectionSrv(ros::NodeHandle nodeHandle)
       finger.plate_height = static_cast<double>(gripper_mask[i]["plate_height"]);
       finger.plate_width = static_cast<double>(gripper_mask[i]["plate_width"]);
       finger.max_grasp_angle = static_cast<double>(gripper_mask[i]["max_grasp_angle"]);
+      finger.pinch_group = static_cast<int>(gripper_mask[i]["pinch_group"]);
       gripper_mask_.push_back(finger);
     }
 
@@ -75,6 +77,7 @@ bool GraspPoseDetectionSrv::callGraspPoseDetection(DetectGraspPose::Request &req
   GraspPoseDetection.setNumberOfEquatorPoints(number_of_equator_points_);
   GraspPoseDetection.setLeafSize(leaf_size_);
   GraspPoseDetection.setMinGraspPoseQuality(min_grasp_pose_quality_);
+  GraspPoseDetection.setNormalSearchRadius(normal_search_radius_);
   GraspPoseDetection.detectGraspPose();
 
   for (int i = 0; i < models_detected_vec.size(); i++) {
