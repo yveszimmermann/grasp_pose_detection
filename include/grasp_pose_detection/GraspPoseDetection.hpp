@@ -38,6 +38,7 @@ class GraspPoseDetection
   {
     geometry_msgs::Pose grasp_pose;
     std::vector<double> finger_position; // y position of fingerplate
+    double grasp_pose_quality;
   };
 
   struct finger_data
@@ -48,6 +49,7 @@ class GraspPoseDetection
     double trajectory_angle;  //angle between normal and trajectory, used for rotation of model around the x-axis
     double plate_height;
     double plate_width;
+    double max_grasp_angle;
   };
 
  public:
@@ -98,6 +100,11 @@ class GraspPoseDetection
   /*!
    * detect objects in scene
    */
+  bool validateGraspPose(std::vector<int> contact_index, pcl::PointCloud<PointType>::Ptr model_aligned, pcl::PointCloud<PointType>::Ptr normals_aligned);
+
+  /*!
+   * detect objects in scene
+   */
   bool setModelPath(std::string model_path);
 
   /*!
@@ -114,6 +121,11 @@ class GraspPoseDetection
    * detect objects in scene
    */
   bool setNumberOfEquatorPoints(double number_of_equator_points);
+
+  /*!
+   * detect objects in scene
+   */
+  bool setMinGraspPoseQuality(double min_grasp_pose_quality);
 
  private:
 
@@ -135,6 +147,7 @@ class GraspPoseDetection
   double leaf_size_;
   double number_of_equator_points_; //ammount of points on the meridian of the geodesic grid
                                     //computation time scales with n³.
+  double min_grasp_pose_quality_;
 
 };
 

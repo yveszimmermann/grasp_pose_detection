@@ -44,6 +44,7 @@ class GraspPoseDetectionSrv
   std::string model_folder_;
   std::string model_path_;
   std::vector<GraspPoseDetection::finger_data> gripper_mask_;
+  double min_grasp_pose_quality_;
 
  bool callGraspPoseDetection(DetectGraspPose::Request &models_to_detect, DetectGraspPose::Response &detected_model_poses);
 };

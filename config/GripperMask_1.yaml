@@ -11,6 +11,7 @@ gripper_mask_1:
   trajectory_angle:     -0.087
   plate_height:         0.03
   plate_width:          0.03
+  max_grasp_angle:      0.35
 - id:                   finger_2
   initial_position:
     x:                  -0.05
@@ -23,6 +24,7 @@ gripper_mask_1:
   trajectory_angle:     -3.054
   plate_height:         0.03
   plate_width:          0.03
+  max_grasp_angle:      0.35
 - id:                   finger_3
   initial_position:
     x:                  0.05
@@ -35,3 +37,4 @@ gripper_mask_1:
   trajectory_angle:     -3.054
   plate_height:         0.03
   plate_width:          0.03
+  max_grasp_angle:      0.35
