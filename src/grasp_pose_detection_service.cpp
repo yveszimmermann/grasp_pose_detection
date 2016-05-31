@@ -28,6 +28,10 @@ GraspPoseDetectionSrv::GraspPoseDetectionSrv(ros::NodeHandle nodeHandle)
   nodeHandle_.getParam("/grasp_pose_detection_service/gripper_mask_1", gripper_mask);
   nodeHandle_.getParam("/grasp_pose_detection_service/min_grasp_pose_quality", min_grasp_pose_quality_);
   nodeHandle_.getParam("/grasp_pose_detection_service/normal_search_radius", normal_search_radius_);
+  nodeHandle_.getParam("/grasp_pose_detection_service/number_of_x_steps", number_of_x_steps_);
+  nodeHandle_.getParam("/grasp_pose_detection_service/number_of_z_steps", number_of_z_steps_);
+  nodeHandle_.getParam("/grasp_pose_detection_service/x_increment", x_increment_);
+  nodeHandle_.getParam("/grasp_pose_detection_service/z_increment", z_increment_);
 
   // Set model path
   std::string path = ros::package::getPath("grasp_pose_detection");
@@ -81,6 +85,10 @@ bool GraspPoseDetectionSrv::callGraspPoseDetection(DetectGraspPose::Request &req
   GraspPoseDetection.setLeafSize(leaf_size_);
   GraspPoseDetection.setMinGraspPoseQuality(min_grasp_pose_quality_);
   GraspPoseDetection.setNormalSearchRadius(normal_search_radius_);
+  GraspPoseDetection.setNumberOfXSteps(number_of_x_steps_);
+  GraspPoseDetection.setNumberOfZSteps(number_of_z_steps_);
+  GraspPoseDetection.setXIncrement(x_increment_);
+  GraspPoseDetection.setZIncrement(z_increment_);
   GraspPoseDetection.detectGraspPose(models_detected_vec, number_of_grasp_poses_vec);
 
   for (int i = 0; i < models_detected_vec.size(); i++) {

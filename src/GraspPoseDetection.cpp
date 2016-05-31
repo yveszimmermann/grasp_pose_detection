@@ -51,7 +51,11 @@ GraspPoseDetection::GraspPoseDetection(std::vector<std::string>& models_to_detec
       number_of_equator_points_(100),
       min_grasp_pose_quality_(0.5),
       number_of_normal_grasp_poses_(0),
-      number_of_pinch_grasp_poses_(0)
+      number_of_pinch_grasp_poses_(0),
+      number_of_x_steps_(0),
+      number_of_z_steps_(0),
+      x_increment_(0.005),
+      z_increment_(0.005)
 {
   models_to_detect_ = models_to_detect;
   models_.resize(models_to_detect.size());
@@ -84,10 +88,14 @@ bool GraspPoseDetection::detectGraspPose(std::vector<std::string>& models_detect
   // detect the grasp poses by iterating through the grasp directions
   for (int model_index = 0; model_index < models_.size(); model_index++) {
     for (int direction_index = 0; direction_index < grasp_directions_.size(); direction_index++) {
-      // TODO do iteration of height
       for (int orientation_index = 0; orientation_index < number_of_equator_points_;
           orientation_index++) {
-        checkGraspPose(model_index, direction_index, orientation_index);
+        for (int x_index = -number_of_x_steps_ / 2; x_index <= number_of_x_steps_ / 2; x_index++) {
+          for (int z_index = -number_of_z_steps_ / 2; z_index <= number_of_z_steps_ / 2;
+              z_index++) {
+            checkGraspPose(model_index, direction_index, orientation_index, x_index, z_index);
+          }
+        }
       }
     }
     if (number_of_normal_grasp_poses_ + number_of_pinch_grasp_poses_ > 0) {
@@ -101,10 +109,10 @@ bool GraspPoseDetection::detectGraspPose(std::vector<std::string>& models_detect
 
     std::string saveFile = save_path_ + models_to_detect_[model_index];
     saveFile = saveFile + "_grasp_poses";
-    saveFile = saveFile + ".txt";
+    saveFile = saveFile + ".gp";
     saveGraspPoses(saveFile, grasp_poses_);
 
-    showQuaternions();
+    //showQuaternions();
     grasp_poses_.clear();
     number_of_normal_grasp_poses_ = 0;
     number_of_pinch_grasp_poses_ = 0;
@@ -231,14 +239,19 @@ bool GraspPoseDetection::computeGraspDirections()
   return true;
 }
 
-bool GraspPoseDetection::checkGraspPose(int model_index, int direction_index, int orientation_index)
+bool GraspPoseDetection::checkGraspPose(int model_index, int direction_index, int orientation_index,
+                                        int x_index, int z_index)
 {
   // Get model cloud description in grasp pose frame
   float theta = (float) theta_[direction_index];
   float psi = (float) -( M_PI / 2 - phi_[direction_index]);
   float delta = 2 * M_PI / number_of_equator_points_ * orientation_index;
+  float x = x_index * x_increment_;
+  float z = z_index * z_increment_;
 
-  // TODO convert this ori_rot to a wrist transformation, to allow translation of the gripper towards COG
+  Eigen::Matrix4f translation;
+  translation << 1, 0, 0, -x, 0, 1, 0, 0, 0, 0, 1, -z, 0, 0, 0, 1;
+
   Eigen::Matrix4f ori_rot;
   ori_rot << cos(-delta), -sin(-delta), 0, 0, sin(-delta), cos(-delta), 0, 0, 0, 0, 1, 0, 0, 0, 0, 1;
 
@@ -248,13 +261,13 @@ bool GraspPoseDetection::checkGraspPose(int model_index, int direction_index, in
   Eigen::Matrix4f z_rot;
   z_rot << cos(-theta), -sin(-theta), 0, 0, sin(-theta), cos(-theta), 0, 0, 0, 0, 1, 0, 0, 0, 0, 1;
 
-  Eigen::Matrix4f rot = ori_rot * y_rot * z_rot;
+  Eigen::Matrix4f tf = translation * ori_rot * y_rot * z_rot;
 
   pcl::PointCloud<PointType>::Ptr model_aligned(new pcl::PointCloud<PointType>);
   pcl::PointCloud<PointType>::Ptr normals_aligned(new pcl::PointCloud<PointType>);
 
-  pcl::transformPointCloud(*models_[model_index].point_cloud_ptr, *model_aligned, rot);
-  pcl::transformPointCloud(*models_[model_index].normals_cloud, *normals_aligned, rot);
+  pcl::transformPointCloud(*models_[model_index].point_cloud_ptr, *model_aligned, tf);
+  pcl::transformPointCloud(*models_[model_index].normals_cloud, *normals_aligned, tf);
 
   // get normal angles and finger poses of each finger tip contact
 
@@ -317,7 +330,7 @@ bool GraspPoseDetection::checkGraspPose(int model_index, int direction_index, in
 
   // Validation of grasp pose
   if (validateGraspPose(contact_index, model_aligned, normals_aligned)) {
-    Eigen::Matrix4f grasp_transform = rot.inverse();
+    Eigen::Matrix4f grasp_transform = tf.inverse();
     Eigen::Matrix3f rotation = grasp_transform.block<3, 3>(0, 0);
     Eigen::Vector3f translation = grasp_transform.block<3, 1>(0, 3);
 
@@ -359,21 +372,11 @@ bool GraspPoseDetection::validateGraspPose(std::vector<int> contact_index,
     contact_normals[i].normalize();
 
     contact_quality[i] = contact_normals[i].dot(gripper_mask_[i].plate_normal);
-//    std::cout << "contact_quality" << contact_quality[i] << std::endl;
 
     if (contact_quality[i] >= cos(gripper_mask_[i].max_grasp_angle)) {
       contact_grip_ensured[i] = true;
     }
   }
-//  std::cout << "x_point " << model_aligned->points[contact_index[0]].x << std::endl;
-//  std::cout << "y_point" << model_aligned->points[contact_index[0]].y << std::endl;
-//  std::cout << "z_point " << model_aligned->points[contact_index[0]].z << std::endl;
-//  std::cout << "x_norm " << contact_normals[0].x() << std::endl;
-//  std::cout << "y_norm " << contact_normals[0].y() << std::endl;
-//  std::cout << "z_norm " << contact_normals[0].z() << std::endl;
-//  std::cout << "x_plate " << gripper_mask_[0].plate_normal.x() << std::endl;
-//  std::cout << "y_plate " << gripper_mask_[0].plate_normal.y() << std::endl;
-//  std::cout << "z_plate " << gripper_mask_[0].plate_normal.z() << std::endl;
 
   bool grasp_pose_ensured = true;
   double grasp_pose_quality = 1;
@@ -394,7 +397,7 @@ bool GraspPoseDetection::validateGraspPose(std::vector<int> contact_index,
     number_of_normal_grasp_poses_++;
     return true;
   } else if (pinch_groups_.size() > 0) {
-    //std::cout << "trying pinch" << std::endl;
+
     // checking if pinch grip is good enough for each pinch group and reset contact_quality
     for (int i = 0; i < pinch_groups_.size(); i++) {
       // projecting contact normals on yz-plane to get the influence of x direction out
@@ -445,7 +448,7 @@ bool GraspPoseDetection::validateGraspPose(std::vector<int> contact_index,
 
 bool GraspPoseDetection::showQuaternions()
 {
-  //TODO Quaternion output, to remove
+
   Eigen::Matrix3f rotation;
   rotation << 1, 0, 0, 0, 1, 0, 0, 0, 1;
 
@@ -460,15 +463,23 @@ bool GraspPoseDetection::showQuaternions()
 
   std::cout << "Unit Quaternion: " << new_pose.orientation.x << " " << new_pose.orientation.y << " "
             << new_pose.orientation.z << " " << new_pose.orientation.w << " " << std::endl;
-  std::cout << "Grasp pose quaternions:" << std::endl;
+
   for (int i = 0; i < grasp_poses_.size(); i++) {
-    std::cout << grasp_poses_[i].grasp_pose.orientation.x << " "
+    std::cout << "Grasp pose :" << i << std::endl;
+
+    std::cout << "position (x,y,z): "<< grasp_poses_[i].grasp_pose.position.x << " "
+        << grasp_poses_[i].grasp_pose.position.y << " "
+        << grasp_poses_[i].grasp_pose.position.z << " " << std::endl;
+
+    std::cout << "orientation (x,y,z,w): " << grasp_poses_[i].grasp_pose.orientation.x << " "
         << grasp_poses_[i].grasp_pose.orientation.y << " "
         << grasp_poses_[i].grasp_pose.orientation.z << " "
         << grasp_poses_[i].grasp_pose.orientation.w << " " << std::endl;
+
     std::cout << "grasp_poses_finger_pos = " << grasp_poses_[i].finger_position[0] << std::endl;
     std::cout << "grasp_poses_finger_pos = " << grasp_poses_[i].finger_position[1] << std::endl;
     std::cout << "grasp_poses_finger_pos = " << grasp_poses_[i].finger_position[2] << std::endl;
+
     std::cout << "grasp_poses_quality = " << grasp_poses_[i].grasp_pose_quality << std::endl;
   }
   return true;
@@ -538,6 +549,38 @@ bool GraspPoseDetection::setNormalSearchRadius(double normal_search_radius)
   return true;
 }
 
+bool GraspPoseDetection::setNumberOfXSteps(int number_of_x_steps)
+{
+  if(number_of_x_steps % 2 != 0){
+  ROS_WARN("Use even numbers of steps! number_of_x_steps will be increased by 1.");
+  number_of_x_steps++;
+  }
+  number_of_x_steps_ = number_of_x_steps;
+  return true;
+}
+
+bool GraspPoseDetection::setNumberOfZSteps(int number_of_z_steps)
+{
+  if(number_of_z_steps % 2 != 0){
+  ROS_WARN("Use even numbers of steps! number_of_z_steps will be increased by 1.");
+  number_of_z_steps++;
+  }
+  number_of_z_steps_ = number_of_z_steps;
+  return true;
+}
+
+bool GraspPoseDetection::setXIncrement(double x_increment)
+{
+  x_increment_ = x_increment;
+  return true;
+}
+
+bool GraspPoseDetection::setZIncrement(double z_increment)
+{
+  z_increment_ = z_increment;
+  return true;
+}
+
 void GraspPoseDetection::saveGraspPoses(std::string save_file_name,
                                         const std::vector<grasp_pose> &grasp_poses)
 {
@@ -550,8 +593,7 @@ void GraspPoseDetection::saveGraspPoses(std::string save_file_name,
 
   for (int i = 0; i < size1; i++) {
     // write finger position vector
-    typename std::vector<double>::size_type size2 =
-        grasp_poses[i].finger_position.size();
+    typename std::vector<double>::size_type size2 = grasp_poses[i].finger_position.size();
     out.write((char*) &size2, sizeof(size2));
     out.write((char*) &grasp_poses[i].finger_position[0],
               grasp_poses[i].finger_position.size() * sizeof(double));

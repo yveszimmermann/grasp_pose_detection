@@ -43,6 +43,10 @@ class GraspPoseDetectionSrv
   int number_of_equator_points_;
   double min_grasp_pose_quality_;
   double normal_search_radius_;
+  int number_of_x_steps_;
+  int number_of_z_steps_;
+  double x_increment_;
+  double z_increment_;
 
   std::string model_folder_;
   std::string save_folder_;

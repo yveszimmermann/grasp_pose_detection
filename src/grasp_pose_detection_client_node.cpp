@@ -51,11 +51,11 @@ int main(int argc, char **argv)
   DetectGraspPose srv;
 
   std::vector<std::string> model_ids;
-//  model_ids.push_back("stone_1");
-//  model_ids.push_back("stone_2");
-//  model_ids.push_back("stone_3");
-//  model_ids.push_back("stone_4");
-//  model_ids.push_back("stone_5");
+  model_ids.push_back("stone_1");
+  model_ids.push_back("stone_2");
+  model_ids.push_back("stone_3");
+  model_ids.push_back("stone_4");
+  model_ids.push_back("stone_5");
   model_ids.push_back("stone_6");
 
   for (std::string id : model_ids) {
@@ -75,7 +75,7 @@ int main(int argc, char **argv)
 
     std::vector<grasp_pose> grasp_poses;
     std::string path = ros::package::getPath("grasp_pose_detection");
-    path = path + "/grasp_poses/stone_6_grasp_poses.txt";
+    path = path + "/grasp_poses/stone_6_grasp_poses.gp";
     readFile(path, grasp_poses);
     std::cout << "grasp_poses_size  = " << grasp_poses.size() << std::endl;
     std::cout << "grasp_poses_ori0_x = " << grasp_poses[4].grasp_pose.orientation.x << std::endl;

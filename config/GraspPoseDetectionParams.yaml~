@@ -1,5 +1,11 @@
 leaf_size:                0.001
 model_folder:             "/models/"
+save_folder:             "/grasp_poses/"
 number_of_equator_points: 16
 min_grasp_pose_quality:   0.95
 normal_search_radius:     0.0025
+number_of_x_steps:        6
+number_of_z_steps:        4
+x_increment:              0.005
+z_increment:              0.01
+
