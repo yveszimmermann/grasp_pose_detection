@@ -32,6 +32,8 @@ GraspPoseDetectionSrv::GraspPoseDetectionSrv(ros::NodeHandle nodeHandle)
   nodeHandle_.getParam("/grasp_pose_detection_service/number_of_z_steps", number_of_z_steps_);
   nodeHandle_.getParam("/grasp_pose_detection_service/x_increment", x_increment_);
   nodeHandle_.getParam("/grasp_pose_detection_service/z_increment", z_increment_);
+  nodeHandle_.getParam("/grasp_pose_detection_service/use_collision_detection", use_collision_detection_);
+  nodeHandle_.getParam("/grasp_pose_detection_service/use_pinch", use_pinch_);
 
   // Set model path
   std::string path = ros::package::getPath("grasp_pose_detection");
@@ -53,6 +55,7 @@ GraspPoseDetectionSrv::GraspPoseDetectionSrv(ros::NodeHandle nodeHandle)
       finger.plate_width = static_cast<double>(gripper_mask[i]["plate_width"]);
       finger.max_grasp_angle = static_cast<double>(gripper_mask[i]["max_grasp_angle"]);
       finger.pinch_group = static_cast<int>(gripper_mask[i]["pinch_group"]);
+      finger.collision_distance = static_cast<double>(gripper_mask[i]["collision_distance"]);
       gripper_mask_.push_back(finger);
     }
 
@@ -89,6 +92,8 @@ bool GraspPoseDetectionSrv::callGraspPoseDetection(DetectGraspPose::Request &req
   GraspPoseDetection.setNumberOfZSteps(number_of_z_steps_);
   GraspPoseDetection.setXIncrement(x_increment_);
   GraspPoseDetection.setZIncrement(z_increment_);
+  GraspPoseDetection.setUseCollisionDetection(use_collision_detection_);
+  GraspPoseDetection.setUsePinch(use_pinch_);
   GraspPoseDetection.detectGraspPose(models_detected_vec, number_of_grasp_poses_vec);
 
   for (int i = 0; i < models_detected_vec.size(); i++) {

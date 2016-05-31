@@ -55,7 +55,9 @@ GraspPoseDetection::GraspPoseDetection(std::vector<std::string>& models_to_detec
       number_of_x_steps_(0),
       number_of_z_steps_(0),
       x_increment_(0.005),
-      z_increment_(0.005)
+      z_increment_(0.005),
+      use_collision_detection_(true),
+      use_pinch_(true)
 {
   models_to_detect_ = models_to_detect;
   models_.resize(models_to_detect.size());
@@ -326,9 +328,33 @@ bool GraspPoseDetection::checkGraspPose(int model_index, int direction_index, in
         contact_index[i] = inlier_indexes[j];
       }
     }
+
+    // collision check (works only if trajectory has no x component)
+    if (use_collision_detection_) {
+      for (int j = 0; j < model_aligned->size(); j++) {
+        double relative_y_position = model_aligned->points[j].y
+            - model_aligned->points[contact_index[i]].y;
+
+        double penetration_distance = -relative_y_position
+            * (gripper_mask_[i].plate_normal.y() / fabs(gripper_mask_[i].plate_normal.y()));
+
+        double z_movement = tan(gripper_mask_[i].trajectory_angle)
+            * (model_aligned->points[contact_index[i]].y - gripper_mask_[i].initial_position.y());
+
+        if (model_aligned->points[j].x
+            >= (gripper_mask_[i].initial_position.x() - (gripper_mask_[i].plate_width / 2))
+            && model_aligned->points[j].x
+                <= (gripper_mask_[i].initial_position.x() + (gripper_mask_[i].plate_width / 2))
+            && penetration_distance > gripper_mask_[i].collision_distance
+            && model_aligned->points[j].z
+                >= (gripper_mask_[i].initial_position.z() + z_movement + (gripper_mask_[i].plate_height / 2))) {
+          return true;
+        }
+      }
+    }
   }
 
-  // Validation of grasp pose
+// Validation of grasp pose
   if (validateGraspPose(contact_index, model_aligned, normals_aligned)) {
     Eigen::Matrix4f grasp_transform = tf.inverse();
     Eigen::Matrix3f rotation = grasp_transform.block<3, 3>(0, 0);
@@ -364,7 +390,7 @@ bool GraspPoseDetection::validateGraspPose(std::vector<int> contact_index,
   contact_grip_ensured.resize(gripper_mask_.size(), false);
   contact_quality.resize(gripper_mask_.size());
 
-  // building the quality criteria
+// building the quality criteria
   for (int i = 0; i < gripper_mask_.size(); i++) {
     contact_normals[i].x() = normals_aligned->points[contact_index[i]].x;
     contact_normals[i].y() = normals_aligned->points[contact_index[i]].y;
@@ -386,7 +412,7 @@ bool GraspPoseDetection::validateGraspPose(std::vector<int> contact_index,
     grasp_pose_quality = grasp_pose_quality * contact_quality[i];
   }
 
-  // selection using the quality values
+// selection using the quality values
   if (grasp_pose_ensured && grasp_pose_quality > min_grasp_pose_quality_) {
     grasp_pose new_grasp_pose;
     new_grasp_pose.grasp_pose_quality = grasp_pose_quality;
@@ -396,7 +422,7 @@ bool GraspPoseDetection::validateGraspPose(std::vector<int> contact_index,
     grasp_poses_.push_back(new_grasp_pose);
     number_of_normal_grasp_poses_++;
     return true;
-  } else if (pinch_groups_.size() > 0) {
+  } else if (pinch_groups_.size() > 0 && use_pinch_) {
 
     // checking if pinch grip is good enough for each pinch group and reset contact_quality
     for (int i = 0; i < pinch_groups_.size(); i++) {
@@ -452,7 +478,7 @@ bool GraspPoseDetection::showQuaternions()
   Eigen::Matrix3f rotation;
   rotation << 1, 0, 0, 0, 1, 0, 0, 0, 1;
 
-  // Convert homogenous transformation matrix to pose
+// Convert homogenous transformation matrix to pose
   geometry_msgs::Pose new_pose;
 
   Eigen::Quaternionf quat(rotation);
@@ -467,9 +493,9 @@ bool GraspPoseDetection::showQuaternions()
   for (int i = 0; i < grasp_poses_.size(); i++) {
     std::cout << "Grasp pose :" << i << std::endl;
 
-    std::cout << "position (x,y,z): "<< grasp_poses_[i].grasp_pose.position.x << " "
-        << grasp_poses_[i].grasp_pose.position.y << " "
-        << grasp_poses_[i].grasp_pose.position.z << " " << std::endl;
+    std::cout << "position (x,y,z): " << grasp_poses_[i].grasp_pose.position.x << " "
+        << grasp_poses_[i].grasp_pose.position.y << " " << grasp_poses_[i].grasp_pose.position.z
+        << " " << std::endl;
 
     std::cout << "orientation (x,y,z,w): " << grasp_poses_[i].grasp_pose.orientation.x << " "
         << grasp_poses_[i].grasp_pose.orientation.y << " "
@@ -551,9 +577,9 @@ bool GraspPoseDetection::setNormalSearchRadius(double normal_search_radius)
 
 bool GraspPoseDetection::setNumberOfXSteps(int number_of_x_steps)
 {
-  if(number_of_x_steps % 2 != 0){
-  ROS_WARN("Use even numbers of steps! number_of_x_steps will be increased by 1.");
-  number_of_x_steps++;
+  if (number_of_x_steps % 2 != 0) {
+    ROS_WARN("Use even numbers of steps! number_of_x_steps will be increased by 1.");
+    number_of_x_steps++;
   }
   number_of_x_steps_ = number_of_x_steps;
   return true;
@@ -561,9 +587,9 @@ bool GraspPoseDetection::setNumberOfXSteps(int number_of_x_steps)
 
 bool GraspPoseDetection::setNumberOfZSteps(int number_of_z_steps)
 {
-  if(number_of_z_steps % 2 != 0){
-  ROS_WARN("Use even numbers of steps! number_of_z_steps will be increased by 1.");
-  number_of_z_steps++;
+  if (number_of_z_steps % 2 != 0) {
+    ROS_WARN("Use even numbers of steps! number_of_z_steps will be increased by 1.");
+    number_of_z_steps++;
   }
   number_of_z_steps_ = number_of_z_steps;
   return true;
@@ -581,6 +607,17 @@ bool GraspPoseDetection::setZIncrement(double z_increment)
   return true;
 }
 
+
+bool GraspPoseDetection::setUseCollisionDetection(bool use_collision_detection){
+  use_collision_detection_ = use_collision_detection;
+  return true;
+}
+
+bool GraspPoseDetection::setUsePinch(bool use_pinch){
+  use_pinch_ = use_pinch;
+  return true;
+}
+
 void GraspPoseDetection::saveGraspPoses(std::string save_file_name,
                                         const std::vector<grasp_pose> &grasp_poses)
 {
@@ -588,7 +625,6 @@ void GraspPoseDetection::saveGraspPoses(std::string save_file_name,
   std::ofstream out(save_file_name, std::ios::out | std::ios::trunc);
 
   typename std::vector<grasp_pose>::size_type size1 = grasp_poses.size();
-  std::cout << "vector size: " << size1 << std::endl;
   out.write((char*) &size1, sizeof(size1));
 
   for (int i = 0; i < size1; i++) {

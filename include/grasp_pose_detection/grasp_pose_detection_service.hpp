@@ -47,6 +47,8 @@ class GraspPoseDetectionSrv
   int number_of_z_steps_;
   double x_increment_;
   double z_increment_;
+  bool use_collision_detection_;
+  bool use_pinch_;
 
   std::string model_folder_;
   std::string save_folder_;

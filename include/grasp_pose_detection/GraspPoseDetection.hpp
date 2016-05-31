@@ -51,6 +51,7 @@ class GraspPoseDetection
     double plate_width;
     double max_grasp_angle;
     int pinch_group;
+    double collision_distance;
   };
 
  public:
@@ -164,6 +165,16 @@ class GraspPoseDetection
    */
   bool setZIncrement(double z_increment);
 
+  /*!
+   * detect objects in scene
+   */
+  bool setUseCollisionDetection(bool use_collision_detection);
+
+  /*!
+   * detect objects in scene
+   */
+  bool setUsePinch(bool use_pinch);
+
   void saveGraspPoses(std::string save_file_name, const std::vector<grasp_pose> &grasp_poses);
 
  private:
@@ -193,6 +204,8 @@ class GraspPoseDetection
   int number_of_z_steps_;
   double x_increment_;
   double z_increment_;
+  bool use_collision_detection_;
+  bool use_pinch_;
 
 
 };
