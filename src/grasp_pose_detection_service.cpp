@@ -32,6 +32,7 @@ GraspPoseDetectionSrv::GraspPoseDetectionSrv(ros::NodeHandle nodeHandle)
   // Set model path
   std::string path = ros::package::getPath("grasp_pose_detection");
   model_path_ = path + model_folder_;
+  save_path_ = path + save_folder_;
 
   // encode gripper mask
     for (int i = 0; i < gripper_mask.size(); ++i) {
@@ -87,7 +88,7 @@ bool GraspPoseDetectionSrv::callGraspPoseDetection(DetectGraspPose::Request &req
   }
 
  // write results to response
-  for (int i = 0; i  < resp.models_detected.size(); i++){
+  for (int i = 0; i  < models_detected_vec.size(); i++){
     std_msgs::String model_name;
     std_msgs::Int32 number_of_grasp_poses;
 

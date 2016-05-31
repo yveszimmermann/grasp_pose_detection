@@ -107,6 +107,11 @@ class GraspPoseDetection
   /*!
    * detect objects in scene
    */
+  bool showQuaternions();
+
+  /*!
+   * detect objects in scene
+   */
   bool setModelPath(std::string model_path);
 
   /*!
@@ -139,6 +144,8 @@ class GraspPoseDetection
    */
   bool setNormalSearchRadius(double normal_search_radius);
 
+  void saveGraspPoses(std::string save_file_name, const std::vector<grasp_pose> &grasp_poses);
+
  private:
 
   std::string model_path_;
@@ -153,6 +160,8 @@ class GraspPoseDetection
   std::vector<double> phi_;
 
   std::vector<grasp_pose> grasp_poses_;
+  int number_of_pinch_grasp_poses_;
+  int number_of_normal_grasp_poses_;
 
   // Parameters
   double normal_search_radius_;
@@ -160,8 +169,7 @@ class GraspPoseDetection
   int number_of_equator_points_;  //ammount of points on the meridian of the geodesic grid
                                   //computation time scales with n³.
   double min_grasp_pose_quality_;
-  int number_of_pinch_grasp_poses_;
-  int number_of_normal_grasp_poses_;
+
 
 };
 

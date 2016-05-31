@@ -9,6 +9,10 @@
 #include <math.h>
 #include <string>
 #include <limits.h>
+#include <fstream>
+#include <vector>
+#include <iostream>
+#include <sstream>
 
 #include <ros/package.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -74,7 +78,8 @@ bool GraspPoseDetection::detectGraspPose(std::vector<std::string>& models_detect
 
   computeGraspDirections();
   ROS_INFO_STREAM("Computed " << grasp_directions_.size() << " grasp directions.");
-  ROS_INFO_STREAM("Trying " << number_of_equator_points_ * grasp_directions_.size() << " grasp poses");
+  ROS_INFO_STREAM(
+      "Trying " << number_of_equator_points_ * grasp_directions_.size() << " grasp poses");
 
   // detect the grasp poses by iterating through the grasp directions
   for (int model_index = 0; model_index < models_.size(); model_index++) {
@@ -84,47 +89,30 @@ bool GraspPoseDetection::detectGraspPose(std::vector<std::string>& models_detect
           orientation_index++) {
         checkGraspPose(model_index, direction_index, orientation_index);
       }
-
     }
-    if (number_of_normal_grasp_poses_ + number_of_pinch_grasp_poses_ > 0){
-    number_of_grasp_poses.push_back(number_of_normal_grasp_poses_ + number_of_pinch_grasp_poses_);
-    models_detected.push_back(models_to_detect_[model_index]);
+    if (number_of_normal_grasp_poses_ + number_of_pinch_grasp_poses_ > 0) {
+      number_of_grasp_poses.push_back(number_of_normal_grasp_poses_ + number_of_pinch_grasp_poses_);
+      models_detected.push_back(models_to_detect_[model_index]);
     }
 
-    ROS_INFO_STREAM( "Model: " << models_to_detect_[model_index]);
-    ROS_INFO_STREAM( "Detected " << number_of_normal_grasp_poses_ << " normal grasp_poses.");
-    ROS_INFO_STREAM( "Detected " << number_of_pinch_grasp_poses_ << " pinched grasp_poses.");
-    // TODO write grasp poses to file here!
+    ROS_INFO_STREAM("Model: " << models_to_detect_[model_index]);
+    ROS_INFO_STREAM("Detected " << number_of_normal_grasp_poses_ << " normal grasp_poses.");
+    ROS_INFO_STREAM("Detected " << number_of_pinch_grasp_poses_ << " pinched grasp_poses.");
+
+    std::string saveFile = save_path_ + models_to_detect_[model_index];
+    saveFile = saveFile + "_grasp_poses";
+    saveFile = saveFile + ".txt";
+    saveGraspPoses(saveFile, grasp_poses_);
+
+    showQuaternions();
+    grasp_poses_.clear();
     number_of_normal_grasp_poses_ = 0;
     number_of_pinch_grasp_poses_ = 0;
+
   }
 
   // stop timer
   toc();
-
-  //TODO Quaternion output, to remove
-  Eigen::Matrix3f rotation;
-  rotation << 1, 0, 0, 0, 1, 0, 0, 0, 1;
-
-  // Convert homogenous transformation matrix to pose
-  geometry_msgs::Pose new_pose;
-
-  Eigen::Quaternionf quat(rotation);
-  new_pose.orientation.w = quat.w();
-  new_pose.orientation.x = quat.x();
-  new_pose.orientation.y = quat.y();
-  new_pose.orientation.z = quat.z();
-
-  std::cout << "Unit Quaternion: " << new_pose.orientation.x << " " << new_pose.orientation.y << " "
-            << new_pose.orientation.z << " " << new_pose.orientation.w << " " << std::endl;
-  std::cout << "Grasp pose quaternions:" << std::endl;
-  for (int i = 0; i < grasp_poses_.size(); i++) {
-    std::cout << grasp_poses_[i].grasp_pose.orientation.x << " "
-        << grasp_poses_[i].grasp_pose.orientation.y << " "
-        << grasp_poses_[i].grasp_pose.orientation.z << " "
-        << grasp_poses_[i].grasp_pose.orientation.w << " " << std::endl;
-
-  }
   return true;
 }
 
@@ -388,7 +376,7 @@ bool GraspPoseDetection::validateGraspPose(std::vector<int> contact_index,
 //  std::cout << "z_plate " << gripper_mask_[0].plate_normal.z() << std::endl;
 
   bool grasp_pose_ensured = true;
-  bool grasp_pose_quality = 1;
+  double grasp_pose_quality = 1;
 
   for (int i = 0; i < gripper_mask_.size(); i++) {
     grasp_pose_ensured = grasp_pose_ensured && contact_grip_ensured[i];
@@ -455,6 +443,38 @@ bool GraspPoseDetection::validateGraspPose(std::vector<int> contact_index,
   return false;
 }
 
+bool GraspPoseDetection::showQuaternions()
+{
+  //TODO Quaternion output, to remove
+  Eigen::Matrix3f rotation;
+  rotation << 1, 0, 0, 0, 1, 0, 0, 0, 1;
+
+  // Convert homogenous transformation matrix to pose
+  geometry_msgs::Pose new_pose;
+
+  Eigen::Quaternionf quat(rotation);
+  new_pose.orientation.w = quat.w();
+  new_pose.orientation.x = quat.x();
+  new_pose.orientation.y = quat.y();
+  new_pose.orientation.z = quat.z();
+
+  std::cout << "Unit Quaternion: " << new_pose.orientation.x << " " << new_pose.orientation.y << " "
+            << new_pose.orientation.z << " " << new_pose.orientation.w << " " << std::endl;
+  std::cout << "Grasp pose quaternions:" << std::endl;
+  for (int i = 0; i < grasp_poses_.size(); i++) {
+    std::cout << grasp_poses_[i].grasp_pose.orientation.x << " "
+        << grasp_poses_[i].grasp_pose.orientation.y << " "
+        << grasp_poses_[i].grasp_pose.orientation.z << " "
+        << grasp_poses_[i].grasp_pose.orientation.w << " " << std::endl;
+    std::cout << "grasp_poses_finger_pos = " << grasp_poses_[i].finger_position[0] << std::endl;
+    std::cout << "grasp_poses_finger_pos = " << grasp_poses_[i].finger_position[1] << std::endl;
+    std::cout << "grasp_poses_finger_pos = " << grasp_poses_[i].finger_position[2] << std::endl;
+    std::cout << "grasp_poses_quality = " << grasp_poses_[i].grasp_pose_quality << std::endl;
+  }
+  return true;
+
+}
+
 bool GraspPoseDetection::setModelPath(std::string model_path)
 {
   model_path_ = model_path;
@@ -501,7 +521,8 @@ bool GraspPoseDetection::setNumberOfEquatorPoints(int number_of_equator_points)
 {
   number_of_equator_points_ = number_of_equator_points;
   if ((number_of_equator_points % 4) != 0)
-    ROS_WARN("Consider using a multiple of 4 as 'number_of_equator_points' to produce better pseudo geodesic grids.");
+    ROS_WARN(
+        "Consider using a multiple of 4 as 'number_of_equator_points' to produce better pseudo geodesic grids.");
   return true;
 }
 
@@ -515,6 +536,31 @@ bool GraspPoseDetection::setNormalSearchRadius(double normal_search_radius)
 {
   normal_search_radius_ = normal_search_radius;
   return true;
+}
+
+void GraspPoseDetection::saveGraspPoses(std::string save_file_name,
+                                        const std::vector<grasp_pose> &grasp_poses)
+{
+  std::cout << "save grasp poses to: " << save_file_name << std::endl;
+  std::ofstream out(save_file_name, std::ios::out | std::ios::trunc);
+
+  typename std::vector<grasp_pose>::size_type size1 = grasp_poses.size();
+  std::cout << "vector size: " << size1 << std::endl;
+  out.write((char*) &size1, sizeof(size1));
+
+  for (int i = 0; i < size1; i++) {
+    // write finger position vector
+    typename std::vector<double>::size_type size2 =
+        grasp_poses[i].finger_position.size();
+    out.write((char*) &size2, sizeof(size2));
+    out.write((char*) &grasp_poses[i].finger_position[0],
+              grasp_poses[i].finger_position.size() * sizeof(double));
+
+    // write pose
+    out.write((char*) &grasp_poses[i].grasp_pose, sizeof(geometry_msgs::Pose));
+    out.write((char*) &grasp_poses[i].grasp_pose_quality, sizeof(double));
+  }
+  out.close();
 }
 
 } /* namespace grasp_pose_detection*/
