@@ -1,0 +1,7 @@
+leaf_size:                0.001
+model_name:               "stone_6"
+model_folder:             "/models/"
+grasp_pose_folder:        "/grasp_poses/"
+grasp_pose_index:         45
+
+

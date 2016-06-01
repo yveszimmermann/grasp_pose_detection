@@ -74,3 +74,15 @@ target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 	add_dependencies(grasp_pose_detection_client grasp_pose_detection_gencpp)
 	target_link_libraries(grasp_pose_detection_client ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+	
+	
+# Visualizer
+	add_executable(
+		grasp_pose_visualizer
+			src/grasp_pose_visualizer_node.cpp
+			src/grasp_pose_visualizer.cpp
+		    src/GraspPoseDetection.cpp
+	)
+
+	add_dependencies(grasp_pose_visualizer grasp_pose_visualizer_gencpp)
+	target_link_libraries(grasp_pose_visualizer ${catkin_LIBRARIES} ${PCL_LIBRARIES})

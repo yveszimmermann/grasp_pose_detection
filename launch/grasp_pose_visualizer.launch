@@ -1,0 +1,10 @@
+<!-- Run grasp pose detection using parameterfile -->
+<launch>
+
+  <!-- Run -->
+  <node pkg="grasp_pose_detection" type="grasp_pose_visualizer" name="grasp_pose_visualizer" output="screen"> 
+    <rosparam command="load" file="$(find grasp_pose_detection)/config/GraspPoseVisualizerParams.yaml"/>
+    <rosparam command="load" file="$(find grasp_pose_detection)/config/GripperMask_1.yaml"/>
+  </node>
+ 
+</launch>

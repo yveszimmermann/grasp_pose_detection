@@ -6,8 +6,8 @@ min_grasp_pose_quality:   0.99
 normal_search_radius:     0.0025
 number_of_x_steps:        6
 number_of_z_steps:        4
-x_increment:              0.005
+x_increment:              0.002
 z_increment:              0.01
-use_collision_detection:  false
+use_collision_detection:  true
 use_pinch:                true
 
